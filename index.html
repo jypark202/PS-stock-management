@@ -106,9 +106,17 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "YOUR_API_KEY", authDomain: "YOUR_AUTH_DOMAIN", projectId: "YOUR_PROJECT_ID" };
+          const firebaseConfig = {
+    apiKey: "AIzaSyCQgruas8LevqyFe7lLksypiVqWyWAEPiU",
+    authDomain: "processcontrol-c965d.firebaseapp.com",
+    projectId: "processcontrol-c965d",
+    storageBucket: "processcontrol-c965d.firebasestorage.app",
+    messagingSenderId: "486850807052",
+    appId: "1:486850807052:web:891ee598c85a7baf5df529",
+    measurementId: "G-XP1X79CNT7"
+  };
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-process-app';
 
         const app = initializeApp(firebaseConfig);
@@ -376,6 +384,7 @@
             }
         }
         
+        // *** FIX: Renamed the function to avoid conflict with the imported Firebase function ***
         async function startApp() {
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
@@ -405,6 +414,7 @@
         saveChangesBtn.addEventListener('click', saveChanges);
         syncDataBtn.addEventListener('click', syncDataFromSheet);
         
+        // *** FIX: Changed the function call to the new name ***
         startApp();
     </script>
 </body>
