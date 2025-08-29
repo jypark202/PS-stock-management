@@ -3,419 +3,362 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>사내 공정 관리 캘린더</title>
+    <title>실시간 재고 관리 시스템</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Noto Sans KR', sans-serif;
-        }
-        .calendar-grid {
-            grid-template-columns: repeat(7, minmax(0, 1fr));
-        }
-        .calendar-day {
-            min-height: 120px;
-        }
-        .event-item {
-            font-size: 0.8rem;
-            padding: 2px 4px;
-            margin-bottom: 2px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        #modal-content::-webkit-scrollbar {
-            width: 8px;
-        }
-        #modal-content::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-        #modal-content::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 4px;
-        }
-        #modal-content::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
-        .process-table th, .process-table td {
-            border: 1px solid #e5e7eb;
-            padding: 0.75rem;
-            text-align: center;
-            vertical-align: middle;
-        }
-        .process-table .checkbox-label {
-            display: flex;
-            align-items: center;
-            margin-bottom: 0.5rem;
-            white-space: nowrap;
-        }
-        .process-table .checkbox-label:last-child {
-            margin-bottom: 0;
-        }
+        body { font-family: 'Noto Sans KR', sans-serif; }
+        .location-cell { min-height: 120px; }
     </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-slate-50">
 
-    <div id="app" class="container mx-auto p-4 max-w-7xl">
-        <div class="flex items-center justify-between mb-4 bg-white p-4 rounded-lg shadow">
+<div id="app" class="container mx-auto p-4 md:p-6 max-w-7xl">
+    <header class="flex items-center justify-between mb-6">
+        <h1 class="text-3xl font-bold text-slate-800">실시간 재고 관리 시스템</h1>
+        <div id="sync-status" class="text-sm text-slate-500 flex items-center gap-2">
+            <div id="status-indicator" class="w-3 h-3 rounded-full bg-yellow-400"></div>
+            <span id="status-text">연결 중...</span>
+        </div>
+    </header>
+
+    <main id="dashboard-view">
+        <h2 class="text-xl font-semibold text-slate-700 mb-4">◆ 현장 평면도</h2>
+        <div id="blocks-container" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+            </div>
+    </main>
+
+    <section id="detail-view" class="mt-8 hidden">
+        <div class="flex justify-between items-center mb-4">
+            <h2 id="detail-view-title" class="text-2xl font-bold text-blue-700"></h2>
+            <button id="back-to-dashboard" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300">&times; 닫기</button>
+        </div>
+        <div id="detail-grid-container" class="bg-white p-4 rounded-lg shadow-md">
+            </div>
+    </section>
+</div>
+
+<div id="item-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md flex flex-col">
+        <div class="flex justify-between items-center p-4 border-b">
+            <h3 id="item-modal-title" class="text-xl font-bold">아이템 관리</h3>
+            <button id="close-item-modal" class="text-slate-500 hover:text-slate-800 text-2xl">&times;</button>
+        </div>
+        <div class="p-6 space-y-4">
             <div>
-                <button id="prev-month" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">&lt; 이전</button>
-                <button id="next-month" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 ml-2">다음 &gt;</button>
+                <label for="item-name" class="block text-sm font-medium text-slate-700">제품명</label>
+                <input type="text" id="item-name" class="mt-1 block w-full border-slate-300 rounded-md shadow-sm">
             </div>
-            <h2 id="current-month-year" class="text-2xl font-bold text-gray-800"></h2>
-            <button id="sync-data-btn" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">새로고침</button>
-        </div>
-
-        <div class="bg-white rounded-lg shadow overflow-hidden">
-            <div class="grid grid-cols-7 text-center font-semibold border-b">
-                <div class="py-2 text-red-500">일</div><div class="py-2">월</div><div class="py-2">화</div><div class="py-2">수</div><div class="py-2">목</div><div class="py-2">금</div><div class="py-2 text-blue-500">토</div>
+            <div>
+                <label for="item-quantity" class="block text-sm font-medium text-slate-700">수량</label>
+                <input type="number" id="item-quantity" class="mt-1 block w-full border-slate-300 rounded-md shadow-sm">
             </div>
-            <div id="calendar-grid" class="grid calendar-grid"></div>
         </div>
-        <div class="text-xs text-gray-500 mt-2">User ID: <span id="userId"></span></div>
+        <div class="p-4 border-t flex justify-between">
+            <button id="delete-item-btn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">삭제</button>
+            <button id="save-item-btn" class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600">저장</button>
+        </div>
     </div>
+</div>
 
-    <div id="detail-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col">
-            <div class="flex justify-between items-center p-4 border-b">
-                <h3 class="text-xl font-bold">상세 정보 및 공정 현황</h3>
-                <button id="close-modal" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
-            </div>
-            <div id="modal-content" class="p-4 overflow-y-auto">
-                <div class="mb-6">
-                    <h4 class="font-bold text-lg mb-2 text-blue-600">기본 정보 (Google Sheet 연동)</h4>
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm border p-4 rounded-md bg-gray-50">
-                        <div><strong>반입일자:</strong> <span id="modal-date"></span></div>
-                        <div><strong>반입라인:</strong> <span id="modal-line"></span></div>
-                        <div><strong>반입호기:</strong> <span id="modal-unit"></span></div>
-                        <div class="col-span-1"><strong>반입구조:</strong> <span id="modal-structure"></span></div>
-                        <div class="col-span-2 md:col-span-2"><strong>특이사항:</strong> <span id="modal-notes"></span></div>
-                    </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, onSnapshot, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY", // ✨ 여기에 자신의 Firebase API Key를 입력하세요.
+        authDomain: "YOUR_AUTH_DOMAIN",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_STORAGE_BUCKET",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+
+    let db, auth;
+    let inventoryData = {};
+    let unsubscribe = null;
+    let currentEditInfo = null; // { locationId, itemIndex }
+
+    const BLOCKS = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+
+    // --- DOM Elements ---
+    const statusIndicator = document.getElementById('status-indicator');
+    const statusText = document.getElementById('status-text');
+    const blocksContainer = document.getElementById('blocks-container');
+    const dashboardView = document.getElementById('dashboard-view');
+    const detailView = document.getElementById('detail-view');
+    const detailViewTitle = document.getElementById('detail-view-title');
+    const detailGridContainer = document.getElementById('detail-grid-container');
+    const backToDashboardBtn = document.getElementById('back-to-dashboard');
+    const itemModal = document.getElementById('item-modal');
+    const closeItemModalBtn = document.getElementById('close-item-modal');
+    const saveItemBtn = document.getElementById('save-item-btn');
+    const deleteItemBtn = document.getElementById('delete-item-btn');
+    const itemNameInput = document.getElementById('item-name');
+    const itemQuantityInput = document.getElementById('item-quantity');
+
+    // --- Firestore Functions ---
+    async function saveData(locationId, data) {
+        if (!db) return;
+        const docRef = doc(db, "inventory", locationId);
+        try {
+            await setDoc(docRef, { ...data, lastUpdated: serverTimestamp() }, { merge: true });
+        } catch (error) {
+            console.error("Firestore 업데이트 오류:", error);
+            alert("데이터 저장에 실패했습니다.");
+        }
+    }
+
+    function listenToInventory() {
+        if (unsubscribe) unsubscribe();
+        const docRef = doc(db, "inventory", "summary"); // 전체 데이터를 하나의 문서에서 관리
+        unsubscribe = onSnapshot(docRef, (snapshot) => {
+            inventoryData = snapshot.exists() ? snapshot.data() : {};
+            renderDashboard();
+            
+            // 상세 뷰가 열려있으면 해당 뷰도 새로고침
+            const currentBlock = detailViewTitle.dataset.block;
+            if (currentBlock && !detailView.classList.contains('hidden')) {
+                renderDetailView(currentBlock);
+            }
+
+            statusIndicator.className = 'w-3 h-3 rounded-full bg-green-500';
+            statusText.textContent = '실시간 동기화 중';
+        }, (error) => {
+            console.error("Firestore 구독 오류:", error);
+            statusIndicator.className = 'w-3 h-3 rounded-full bg-red-500';
+            statusText.textContent = '연결 오류';
+        });
+    }
+
+    // --- Render Functions ---
+    function renderDashboard() {
+        blocksContainer.innerHTML = '';
+        BLOCKS.forEach(blockId => {
+            let totalItems = 0;
+            let uniqueItemCount = 0;
+            
+            // 해당 블록의 재고 요약 계산
+            Object.keys(inventoryData).forEach(locationId => {
+                if (locationId.startsWith(blockId)) {
+                    const location = inventoryData[locationId];
+                    if (location && location.items) {
+                        uniqueItemCount += location.items.length;
+                        location.items.forEach(item => {
+                            totalItems += Number(item.quantity) || 0;
+                        });
+                    }
+                }
+            });
+
+            const blockEl = document.createElement('div');
+            blockEl.className = 'bg-white p-4 rounded-lg shadow-md hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer';
+            blockEl.innerHTML = `
+                <div class="flex items-center justify-center w-16 h-16 bg-blue-600 text-white text-3xl font-bold rounded-lg mx-auto">${blockId}</div>
+                <div class="text-center mt-4">
+                    <p class="text-lg font-bold text-slate-800">${blockId} Block</p>
+                    <p class="text-sm text-slate-500 mt-1">품목: ${uniqueItemCount}종 / 수량: ${totalItems}개</p>
                 </div>
-                <div id="process-table-container"></div>
+            `;
+            blockEl.addEventListener('click', () => showDetailView(blockId));
+            blocksContainer.appendChild(blockEl);
+        });
+    }
+
+    function renderDetailView(blockId) {
+        detailViewTitle.textContent = `◆ ${blockId} Block 상세`;
+        detailViewTitle.dataset.block = blockId;
+        detailGridContainer.innerHTML = `
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <h3 class="text-center font-bold text-xl mb-2">L</h3>
+                    <div id="${blockId}-L-col" class="space-y-4"></div>
+                </div>
+                <div>
+                    <h3 class="text-center font-bold text-xl mb-2">R</h3>
+                    <div id="${blockId}-R-col" class="space-y-4"></div>
+                </div>
             </div>
-            <div class="p-4 border-t flex justify-end">
-                <button id="save-changes" class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600">공정 현황 저장</button>
-            </div>
-        </div>
-    </div>
-    
-    <div id="loading-spinner" class="fixed inset-0 bg-white bg-opacity-70 flex items-center justify-center z-50">
-        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
-    </div>
-    
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        `;
 
-          const firebaseConfig = {
-    apiKey: "AIzaSyCQgruas8LevqyFe7lLksypiVqWyWAEPiU",
-    authDomain: "processcontrol-c965d.firebaseapp.com",
-    projectId: "processcontrol-c965d",
-    storageBucket: "processcontrol-c965d.firebasestorage.app",
-    messagingSenderId: "486850807052",
-    appId: "1:486850807052:web:891ee598c85a7baf5df529",
-    measurementId: "G-XP1X79CNT7"
-  };
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-process-app';
+        ['L', 'R'].forEach(side => {
+            const colContainer = document.getElementById(`${blockId}-${side}-col`);
+            for (let floor = 5; floor >= 1; floor--) {
+                [cite_start]const locationId = `${blockId}-${side}-${floor}`; // e.g., A-L-5 [cite: 2]
+                const cell = document.createElement('div');
+                cell.className = 'location-cell border-2 border-slate-200 rounded-lg p-3 bg-slate-50';
+                
+                const header = document.createElement('div');
+                header.className = 'flex justify-between items-center mb-2';
+                header.innerHTML = `<span class="font-bold text-blue-800 bg-blue-100 px-2 py-1 rounded-md text-sm">${locationId}</span>`;
+                
+                const addButton = document.createElement('button');
+                addButton.textContent = '+';
+                addButton.className = 'w-6 h-6 bg-green-500 text-white rounded-full hover:bg-green-600 font-bold';
+                addButton.onclick = () => openItemModal(locationId, null);
+                header.appendChild(addButton);
+                
+                cell.appendChild(header);
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/14-XPqu-SKexDROXn_kJG82n5wIpTe7AGGTutMrN-CJM/export?format=csv&gid=0';
-        const PROXY_URL = 'https://corsproxy.io/?';
-
-        let currentYear, currentMonth;
-        let tasks = [];
-        let currentTask = null;
-        let currentUserId = null;
-
-        const calendarGrid = document.getElementById('calendar-grid');
-        const currentMonthYearEl = document.getElementById('current-month-year');
-        const prevMonthBtn = document.getElementById('prev-month');
-        const nextMonthBtn = document.getElementById('next-month');
-        const modal = document.getElementById('detail-modal');
-        const closeModalBtn = document.getElementById('close-modal');
-        const loadingSpinner = document.getElementById('loading-spinner');
-        const syncDataBtn = document.getElementById('sync-data-btn');
-        const saveChangesBtn = document.getElementById('save-changes');
-
-        const productNames = ["상판/건시창", "전수", "구성품", "각도판"];
-        const processDefinitions = {
-            "포승(부광)": { rows: { "상태": { "이동대기": false, "이동중": false, "이동완료": false }, "이동일자": "" }, notes: "" },
-            "현곡(인현)": { rows: { "상태": { "입고완료": false, "검사대기": false, "검사완료": false } }, notes: "" },
-            "현곡(TKG)": { rows: { "상태": { "CR입고": false, "장입대기": false, "오븐가동중": false, "장출대기": false, "장출완료": false, "포장완료": false, "외부이동": false } }, notes: "" },
-            "현곡(인현)_출하": { rows: { "상태": { "상차대기": false, "상차중": false, "상차완료": false, "랩핑완료": false, "출하장 이동": false } }, notes: "" }
-        };
-
-        function generateProcessData() {
-            const processes = {};
-            for (const groupName in processDefinitions) {
-                processes[groupName] = { products: {}, notes: "" };
-                for (const productName of productNames) {
-                    processes[groupName].products[productName] = {};
-                    for (const rowName in processDefinitions[groupName].rows) {
-                        const rowValue = processDefinitions[groupName].rows[rowName];
-                        processes[groupName].products[productName][rowName] = (typeof rowValue === 'object') ? { ...rowValue } : rowValue;
-                    }
-                }
-            }
-            return processes;
-        }
-
-        function parseCSV(text) {
-            const lines = text.replace(/\r/g, '').split('\n').map(l => l.trim()).filter(l => l);
-            if (lines.length < 2) return [];
-            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-            const requiredHeaders = ['반입일자', '반입라인', '반입호기'];
-            if (!requiredHeaders.every(h => headers.includes(h))) {
-                console.error("CSV 헤더에 필수 열(반입일자, 반입라인, 반입호기)이 없습니다. 찾은 헤더:", headers);
-                alert("시트의 헤더(첫 번째 줄)에 '반입일자', '반입라인', '반입호기' 열이 모두 포함되어 있는지 확인해주세요.");
-                return [];
-            }
-            return lines.slice(1).map(line => {
-                const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
-                let row = {};
-                headers.forEach((header, index) => {
-                    row[header] = values[index] || '';
-                });
-                return row;
-            });
-        }
-
-        async function syncDataFromSheet() {
-            loadingSpinner.style.display = 'flex';
-            try {
-                const response = await fetch(`${PROXY_URL}${encodeURIComponent(GOOGLE_SHEET_URL)}`);
-                if (!response.ok) throw new Error(`Google Sheet 데이터를 가져올 수 없습니다. (응답 코드: ${response.status})`);
-                const csvText = await response.text();
-                const sheetData = parseCSV(csvText);
-
-                const firestoreCollection = collection(db, "artifacts", appId, "public", "data", "tasks");
-                const firestoreSnapshot = await getDocs(firestoreCollection);
-                const firestoreProcesses = {};
-                firestoreSnapshot.forEach(doc => {
-                    firestoreProcesses[doc.id] = doc.data().processes;
-                });
-
-                tasks = sheetData.map(row => {
-                    const date = row['반입일자'];
-                    const line = row['반입라인'];
-                    const unit = row['반입호기'];
-                    if (!date || !line || !unit) return null;
-
-                    const taskId = `${date}-${line}-${unit.replace(/ /g, '_')}`;
-                    return {
-                        id: taskId,
-                        date: date,
-                        line: line,
-                        unit: unit,
-                        structure: row['반입구조'] || '',
-                        notes: row['특이사항'] || '',
-                        processes: firestoreProcesses[taskId] || generateProcessData()
-                    };
-                }).filter(task => task !== null);
-
-                renderCalendar(currentYear, currentMonth);
-            } catch (error) {
-                console.error("데이터 동기화 오류:", error);
-                alert(`데이터를 불러오는 중 오류가 발생했습니다: ${error.message}. Google Sheet 공유 설정과 인터넷 연결을 확인해주세요.`);
-            } finally {
-                loadingSpinner.style.display = 'none';
-            }
-        }
-
-        function renderCalendar(year, month) {
-            currentYear = year; currentMonth = month;
-            currentMonthYearEl.textContent = `${year}년 ${month + 1}월`;
-            calendarGrid.innerHTML = '';
-            const firstDay = new Date(year, month, 1).getDay();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            for (let i = 0; i < firstDay; i++) calendarGrid.appendChild(document.createElement('div'));
-            for (let day = 1; day <= daysInMonth; day++) {
-                const dayCell = document.createElement('div');
-                dayCell.className = 'calendar-day border-t border-l p-2 relative';
-                const dayNumber = document.createElement('span');
-                dayNumber.textContent = day;
-                dayNumber.className = 'text-sm';
-                dayCell.appendChild(dayNumber);
-                const today = new Date();
-                if (year === today.getFullYear() && month === today.getMonth() && day === today.getDate()) {
-                    dayNumber.classList.add('bg-blue-500', 'text-white', 'rounded-full', 'w-6', 'h-6', 'inline-block', 'text-center', 'leading-6');
-                }
-                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                const dayTasks = tasks.filter(t => t.date === dateStr);
-                const eventsContainer = document.createElement('div');
-                eventsContainer.className = 'mt-1';
-                dayTasks.forEach(task => {
-                    const eventEl = document.createElement('div');
-                    eventEl.className = 'event-item bg-blue-100 text-blue-800 hover:bg-blue-200';
-                    eventEl.textContent = `${task.line} / ${task.unit}`;
-                    eventEl.dataset.taskId = task.id;
-                    eventEl.addEventListener('click', () => openModal(task.id));
-                    eventsContainer.appendChild(eventEl);
-                });
-                dayCell.appendChild(eventsContainer);
-                calendarGrid.appendChild(dayCell);
-            }
-        }
-        
-        function openModal(taskId) {
-            currentTask = tasks.find(t => t.id === taskId);
-            if (!currentTask) return;
-            
-            document.getElementById('modal-date').textContent = currentTask.date;
-            document.getElementById('modal-line').textContent = currentTask.line;
-            document.getElementById('modal-unit').textContent = currentTask.unit;
-            document.getElementById('modal-structure').textContent = currentTask.structure;
-            document.getElementById('modal-notes').textContent = currentTask.notes;
-            
-            renderProcessTable(currentTask.processes);
-            modal.style.display = 'flex';
-        }
-        
-        function renderProcessTable(processes) {
-            const container = document.getElementById('process-table-container');
-            container.innerHTML = '';
-            if (!processes) return;
-            const table = document.createElement('table');
-            table.className = 'w-full text-sm border-collapse process-table';
-            const thead = document.createElement('thead');
-            thead.className = 'bg-gray-100 font-semibold';
-            thead.innerHTML = `<tr><th style="width: 10%;">공정</th><th style="width: 10%;"></th>${productNames.map(name => `<th>${name}</th>`).join('')}</tr>`;
-            table.appendChild(thead);
-            const tbody = document.createElement('tbody');
-            Object.entries(processDefinitions).forEach(([groupName, def]) => {
-                const rowKeys = Object.keys(def.rows);
-                const notesRowNeeded = 'notes' in def;
-                const rowSpan = rowKeys.length + (notesRowNeeded ? 1 : 0);
-                rowKeys.forEach((rowName, index) => {
-                    const tr = document.createElement('tr');
-                    if (index === 0) {
-                        const tdGroup = document.createElement('td');
-                        tdGroup.rowSpan = rowSpan;
-                        tdGroup.className = "font-semibold";
-                        tdGroup.textContent = groupName.replace('_출하', '(인현)');
-                        tr.appendChild(tdGroup);
-                    }
-                    const tdRowHeader = document.createElement('td');
-                    tdRowHeader.className = "font-semibold bg-gray-50";
-                    tdRowHeader.textContent = rowName;
-                    tr.appendChild(tdRowHeader);
-                    productNames.forEach(productName => {
-                        const td = document.createElement('td');
-                        const productData = processes[groupName]?.products?.[productName]?.[rowName];
-                        if (typeof productData === 'object') {
-                            td.className = 'text-left align-top pt-3';
-                            Object.entries(productData).forEach(([detailName, isChecked]) => {
-                                const label = document.createElement('label');
-                                label.className = 'checkbox-label';
-                                const checkbox = document.createElement('input');
-                                checkbox.type = 'checkbox';
-                                checkbox.className = 'form-checkbox h-4 w-4 text-blue-600 rounded';
-                                checkbox.checked = isChecked;
-                                checkbox.dataset.group = groupName; checkbox.dataset.product = productName; checkbox.dataset.row = rowName; checkbox.dataset.detail = detailName;
-                                label.appendChild(checkbox);
-                                label.appendChild(document.createTextNode(` ${detailName}`));
-                                td.appendChild(label);
-                            });
-                        } else {
-                            const input = document.createElement('input');
-                            input.type = 'text';
-                            input.className = 'w-full border rounded p-1';
-                            input.value = productData || '';
-                            input.dataset.group = groupName; input.dataset.product = productName; input.dataset.row = rowName;
-                            td.appendChild(input);
-                        }
-                        tr.appendChild(td);
+                const itemList = document.createElement('ul');
+                itemList.className = 'space-y-1 text-sm';
+                
+                const locationData = inventoryData[locationId];
+                if (locationData && locationData.items) {
+                    locationData.items.forEach((item, index) => {
+                        const li = document.createElement('li');
+                        li.className = 'flex justify-between items-center p-1.5 rounded hover:bg-slate-200 cursor-pointer';
+                        li.innerHTML = `
+                            <span>✓ ${item.name}</span>
+                            <span class="font-semibold">${item.quantity} EA</span>
+                        `;
+                        li.onclick = () => openItemModal(locationId, index);
+                        itemList.appendChild(li);
                     });
-                    tbody.appendChild(tr);
-                });
-                if (notesRowNeeded) {
-                    const trNotes = document.createElement('tr');
-                    const tdNotesHeader = document.createElement('td');
-                    tdNotesHeader.className = "font-semibold bg-gray-50";
-                    tdNotesHeader.textContent = '특이사항';
-                    trNotes.appendChild(tdNotesHeader);
-                    const tdNotesText = document.createElement('td');
-                    tdNotesText.colSpan = productNames.length;
-                    const textarea = document.createElement('textarea');
-                    textarea.className = 'w-full border rounded p-2 h-20 resize-none';
-                    textarea.value = processes[groupName]?.notes || '';
-                    textarea.dataset.group = groupName; textarea.dataset.row = 'notes';
-                    tdNotesText.appendChild(textarea);
-                    trNotes.appendChild(tdNotesText);
-                    tbody.appendChild(trNotes);
                 }
-            });
-            table.appendChild(tbody);
-            container.appendChild(table);
-        }
-
-        function closeModal() { modal.style.display = 'none'; currentTask = null; }
-
-        async function saveChanges() {
-            if (!currentTask) return;
-            loadingSpinner.style.display = 'flex';
-            
-            const processesToSave = JSON.parse(JSON.stringify(currentTask.processes));
-            const inputs = modal.querySelectorAll('input[type="checkbox"], input[type="text"][data-row], textarea[data-row]');
-            inputs.forEach(input => {
-                const { group, product, row, detail } = input.dataset;
-                if (!group || !row) return;
-                if (row === 'notes') { processesToSave[group].notes = input.value; } 
-                else if (product) {
-                    if (detail) { processesToSave[group].products[product][row][detail] = input.checked; } 
-                    else { processesToSave[group].products[product][row] = input.value; }
-                }
-            });
-            
-            try {
-                const docRef = doc(db, "artifacts", appId, "public", "data", "tasks", currentTask.id);
-                await setDoc(docRef, { processes: processesToSave }, { merge: true });
-                alert('저장되었습니다.');
-                closeModal();
-            } catch (error) {
-                console.error("Error saving changes: ", error);
-                alert("공정 현황 저장에 실패했습니다.");
-            } finally {
-                loadingSpinner.style.display = 'none';
+                cell.appendChild(itemList);
+                colContainer.appendChild(cell);
             }
+        });
+    }
+
+    // --- View Control ---
+    function showDetailView(blockId) {
+        dashboardView.classList.add('hidden');
+        renderDetailView(blockId);
+        detailView.classList.remove('hidden');
+        window.scrollTo(0, 0);
+    }
+
+    function hideDetailView() {
+        detailView.classList.add('hidden');
+        dashboardView.classList.remove('hidden');
+        detailViewTitle.dataset.block = '';
+    }
+
+    // --- Modal Control ---
+    function openItemModal(locationId, itemIndex) {
+        currentEditInfo = { locationId, itemIndex };
+        if (itemIndex !== null) { // Editing existing item
+            const item = inventoryData[locationId].items[itemIndex];
+            itemModal.querySelector('#item-modal-title').textContent = `${locationId} - 아이템 수정`;
+            itemNameInput.value = item.name;
+            itemQuantityInput.value = item.quantity;
+            deleteItemBtn.classList.remove('hidden');
+        } else { // Adding new item
+            itemModal.querySelector('#item-modal-title').textContent = `${locationId} - 새 아이템 추가`;
+            itemNameInput.value = '';
+            itemQuantityInput.value = '';
+            deleteItemBtn.classList.add('hidden');
         }
-        
-        // *** FIX: Renamed the function to avoid conflict with the imported Firebase function ***
-        async function startApp() {
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    currentUserId = user.uid;
-                    document.getElementById('userId').textContent = currentUserId;
-                    await syncDataFromSheet();
-                } else {
-                    document.getElementById('userId').textContent = 'Not logged in';
-                }
-            });
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else { await signInAnonymously(auth); }
-            } catch (error) {
-                console.error("Authentication failed:", error);
-            }
+        itemModal.style.display = 'flex';
+        itemNameInput.focus();
+    }
+
+    function closeItemModal() {
+        itemModal.style.display = 'none';
+        currentEditInfo = null;
+    }
+
+    // --- Data Handlers ---
+    async function handleSaveItem() {
+        if (!currentEditInfo) return;
+
+        const { locationId, itemIndex } = currentEditInfo;
+        const name = itemNameInput.value.trim();
+        const quantity = parseInt(itemQuantityInput.value, 10);
+
+        if (!name || isNaN(quantity) || quantity < 0) {
+            alert('올바른 제품명과 수량을 입력하세요.');
+            return;
         }
 
-        const today = new Date();
-        currentYear = today.getFullYear();
-        currentMonth = today.getMonth();
+        const newInventoryData = JSON.parse(JSON.stringify(inventoryData)); // Deep copy
+        if (!newInventoryData[locationId]) {
+            newInventoryData[locationId] = { items: [] };
+        }
         
-        prevMonthBtn.addEventListener('click', () => { currentMonth--; if (currentMonth < 0) { currentMonth = 11; currentYear--; } renderCalendar(currentYear, currentMonth); });
-        nextMonthBtn.addEventListener('click', () => { currentMonth++; if (currentMonth > 11) { currentMonth = 0; currentYear++; } renderCalendar(currentYear, currentMonth); });
-        closeModalBtn.addEventListener('click', closeModal);
-        saveChangesBtn.addEventListener('click', saveChanges);
-        syncDataBtn.addEventListener('click', syncDataFromSheet);
+        const newItem = { name, quantity };
+
+        if (itemIndex !== null) { // Update
+            newInventoryData[locationId].items[itemIndex] = newItem;
+        } else { // Add
+            newInventoryData[locationId].items.push(newItem);
+        }
         
-        // *** FIX: Changed the function call to the new name ***
-        startApp();
-    </script>
+        await saveDataToMasterDoc(newInventoryData);
+        closeItemModal();
+    }
+
+    async function handleDeleteItem() {
+        if (!currentEditInfo || currentEditInfo.itemIndex === null) return;
+        if (!confirm('정말로 이 아이템을 삭제하시겠습니까?')) return;
+        
+        const { locationId, itemIndex } = currentEditInfo;
+        
+        const newInventoryData = JSON.parse(JSON.stringify(inventoryData));
+        newInventoryData[locationId].items.splice(itemIndex, 1);
+        
+        await saveDataToMasterDoc(newInventoryData);
+        closeItemModal();
+    }
+    
+    // 데이터를 하나의 summary 문서에 저장
+    async function saveDataToMasterDoc(fullData) {
+        if (!db) return;
+        const docRef = doc(db, "inventory", "summary");
+        try {
+            await setDoc(docRef, fullData);
+        } catch (error) {
+            console.error("Firestore 업데이트 오류:", error);
+            alert("데이터 저장에 실패했습니다.");
+        }
+    }
+
+
+    // --- Initialization ---
+    function initialize() {
+        try {
+            // ✨ Firebase 설정이 비어있는 경우 안내 메시지를 표시합니다.
+            if (!firebaseConfig.apiKey || firebaseConfig.apiKey.startsWith("YOUR_")) {
+                document.getElementById('app').innerHTML = `
+                    <div class="text-center p-8 bg-orange-100 text-orange-800 rounded-lg shadow-md mt-4">
+                        <h3 class="font-bold text-xl mb-2">⚠️ Firebase 설정 필요</h3>
+                        <p>실시간 동기화를 위해 HTML 코드의 'firebaseConfig' 부분을 자신의 Firebase 프로젝트 정보로 채워주세요.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+
+            signInAnonymously(auth).then(() => {
+                listenToInventory();
+            }).catch((error) => {
+                console.error("익명 로그인 실패:", error);
+                statusIndicator.className = 'w-3 h-3 rounded-full bg-red-500';
+                statusText.textContent = '인증 오류';
+            });
+            
+            // Event Listeners
+            backToDashboardBtn.addEventListener('click', hideDetailView);
+            closeItemModalBtn.addEventListener('click', closeItemModal);
+            saveItemBtn.addEventListener('click', handleSaveItem);
+            deleteItemBtn.addEventListener('click', handleDeleteItem);
+
+        } catch (error) {
+            console.error("Firebase 초기화 오류:", error);
+            statusIndicator.className = 'w-3 h-3 rounded-full bg-red-500';
+            statusText.textContent = '초기화 실패';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', initialize);
+</script>
+
 </body>
 </html>
